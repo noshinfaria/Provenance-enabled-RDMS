@@ -6,7 +6,6 @@ def build_provenance_query(params):
     returns = params.get("return", [])
     filters = params.get("filter", {})
     joins = params.get("join", [])
-    aggregate = params.get("aggregate")
     order = params.get("order", [])
 
     sql_parts = []
@@ -67,20 +66,40 @@ def build_provenance_query(params):
                 left_expr, op, right_expr = val
 
                 def replace_with_alias(expr):
-                    if "." in expr:
+                    if isinstance(expr, str) and "." in expr:
                         tbl, col = expr.split(".")
                         alias = alias_map.get(tbl, tbl)  # fallback to tbl if not in map
                         return f"{alias}.{col}"
-                    return expr  # raw literal (e.g., number)
+                    return repr(expr)  # for numbers or strings
 
                 left_expr = replace_with_alias(left_expr)
                 right_expr = replace_with_alias(right_expr)
 
                 where_conditions.append(f"{left_expr} {op} {right_expr}")
+
             else:
                 tbl_name, col_name = key.split(".") if "." in key else (table, key)
                 alias = alias_map.get(tbl_name, main_alias)
-                where_conditions.append(f"{alias}.{col_name} = {val}")
+                where_conditions.append(f"{alias}.{col_name} = {repr(val)}")
+            # if key == "comparison":
+            #     # Handle: ["left_expr", "operator", "right_expr"]
+            #     left_expr, op, right_expr = val
+
+            #     def replace_with_alias(expr):
+            #         if "." in expr:
+            #             tbl, col = expr.split(".")
+            #             alias = alias_map.get(tbl, tbl)  # fallback to tbl if not in map
+            #             return f"{alias}.{col}"
+            #         return expr  # raw literal (e.g., number)
+
+            #     left_expr = replace_with_alias(left_expr)
+            #     right_expr = replace_with_alias(right_expr)
+
+            #     where_conditions.append(f"{left_expr} {op} {right_expr}")
+            # else:
+            #     tbl_name, col_name = key.split(".") if "." in key else (table, key)
+            #     alias = alias_map.get(tbl_name, main_alias)
+            #     where_conditions.append(f"{alias}.{col_name} = {val}")
 
     if where_conditions:
         sql_parts.append("WHERE " + " AND ".join(where_conditions))
@@ -107,18 +126,13 @@ def build_provenance_query(params):
 # CGPA
 
 query = {
-  "table": "grades",
-  "join": [
-    { 
-      "TABLE": "courses", 
-      "ON": "grades.course_id = courses.course_id"
-    }
-  ],
-  "return": ["grades.course_id", "courses.credit", "grades.semester", "grades.gpa"],
+  "table": "price_audit",
+  "since": "2022-01-01",
+  "return": ["price_audit.old_price", "price_audit.new_price", "price_audit.operation_time"],
   "filter": {
-    "grades.student_id": 123
-  },
-  "order": ["grades.semester"]
+    "comparison": ["price_audit.new_price", "<", "price_audit.old_price"],
+  "product_id" : 765
+  }
 }
 
 
