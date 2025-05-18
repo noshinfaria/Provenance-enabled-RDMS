@@ -1,5 +1,5 @@
 import sqlite3
-from store_data import setup_tables
+from store_data import setup_tables, print_all_data
 from provenance import run_query_and_provenance
 tables = {
     'STUDENT': {
@@ -21,21 +21,25 @@ tables = {
     }
 }
 
-conn = sqlite3.connect(':memory:')
+conn = sqlite3.connect('example.db')
 setup_tables(conn, tables)
+print_all_data(conn)
 
-# Customize fields
-outer_table = 'DATABASE'
-subquery_table = 'STUDENT'
-match_field = 'ROLL_NO'
-subquery_condition_field = 'SECTION'
-subquery_condition_value = 'A'
 
-result, provenance = run_query_and_provenance(
-    conn, outer_table, subquery_table, match_field, subquery_condition_field, subquery_condition_value
-)
+# --- Test query ---
+query = """
+SELECT NAME, LOCATION, PHONE_NUMBER 
+FROM DATABASE 
+WHERE ROLL_NO IN (
+    SELECT ROLL_NO FROM STUDENT WHERE SECTION = 'A'
+);
+"""
+
+# Run
+result, provenance = run_query_and_provenance(query)
 
 # --- OUTPUT ---
+print("\nStep 8: Final Output\n---------------------------")
 print("Query Results:")
 for r in result:
     print(r)

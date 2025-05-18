@@ -1,11 +1,13 @@
 # import sqlite3
 # import pandas as pd
 
-# # Connect and setup
-# conn = sqlite3.connect("current.db")
+# Connect and setup
+# conn = sqlite3.connect("example.db")
 # cursor = conn.cursor()
 
 # # Create tables
+# cursor.execute("DROP TABLE STUDENT")
+# cursor.execute("DROP TABLE DATABASE")
 # cursor.execute("CREATE TABLE STUDENT (ROLL_NO INT, NAME TEXT, SECTION TEXT)")
 # cursor.execute("CREATE TABLE DATABASE (ROLL_NO INT, NAME TEXT, LOCATION TEXT, PHONE_NUMBER TEXT)")
 
@@ -39,3 +41,20 @@ def setup_tables(conn, tables):
         placeholders = ', '.join(['?'] * len(data[0]))
         cursor.executemany(f"INSERT INTO {table_name} VALUES ({placeholders})", data)
     conn.commit()
+
+
+# --- PRINT ALL DATA ---
+def print_all_data(conn):
+    cursor = conn.cursor()
+    for table_name in ['STUDENT', 'DATABASE']:
+        print(f"\n--- Contents of {table_name} ---")
+        cursor.execute(f"SELECT * FROM {table_name}")
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
+
+        print(f"\n--- Contents of Given Query ---")
+        cursor.execute(f"SELECT NAME, LOCATION, PHONE_NUMBER FROM DATABASE WHERE ROLL_NO IN (SELECT ROLL_NO FROM STUDENT WHERE SECTION = 'A')")
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
